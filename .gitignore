@@ -1,0 +1,18 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# Local .NET user settings
+.vs/
+*.user
+
+# Local gh CLI copy (used to publish the repo)
+.ghcli/
+
+# IDE
+.idea/
+*.suo
+
+# OS
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEIW — защищённый вход в Windows, пароль, который невозможно подглядеть, 100 ₽</title>
+<meta name="description" content="SEIW — программа защищённого входа в Windows: экран блокировки в стиле Windows со «спящими» символами — пароль невозможно подсмотреть по рукам, взгляду или камере. Применение: кабинет руководителя, госслужба, рабочие станции, родительский контроль. Один раз 100 ₽ — лицензия навсегда. Исходный код открыт (MIT).">
+<style>
+  :root{
+    --bg:#0f1a2b; --panel:#16263d; --panel2:#1c3050; --text:#e8eef7;
+    --muted:#9db1cd; --accent:#4fa3ff; --accent2:#2ecc8f; --border:#2b4060; --warn:#ffb454;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header.top{position:sticky;top:0;background:rgba(15,26,43,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:10}
+  nav{display:flex;align-items:center;gap:24px;padding:14px 0}
+  .brand{font-weight:700;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:10px}
+  .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);display:inline-block}
+  nav .links{margin-left:auto;display:flex;gap:20px}
+  nav a{color:var(--muted);text-decoration:none;font-size:15px}
+  nav a:hover{color:var(--text)}
+  .btn{display:inline-block;background:var(--accent);color:#08121f;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;transition:transform .1s,background .15s}
+  .btn:hover{background:#6db4ff;transform:translateY(-1px)}
+  .btn.alt{background:var(--accent2)}
+  section{padding:72px 0}
+  .hero{text-align:center;padding:96px 24px 72px}
+  .hero h1{font-size:clamp(30px,5vw,52px);line-height:1.15;font-weight:800;max-width:860px;margin:0 auto 18px}
+  .hero h1 span{color:var(--accent)}
+  .hero p.lead{font-size:19px;color:var(--muted);max-width:680px;margin:0 auto 32px}
+  .hero .price{margin-top:8px;font-size:17px;color:var(--warn);font-weight:600}
+  .mock{max-width:560px;margin:44px auto 0;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .mock .scr{position:relative;background:linear-gradient(180deg,#1b2b44,#0d1627);border-radius:12px;overflow:hidden;aspect-ratio:16/9}
+  .mock .lockline{position:absolute;left:6%;bottom:8%;text-align:left}
+  .mock .big{font-size:46px;font-weight:200;line-height:1}
+  .mock .sub{font-size:15px;color:#cfe0f5;margin-top:4px}
+  .mock .center{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);text-align:center}
+  .mock .av{margin:0 auto 10px;width:64px;height:64px;border-radius:50%;background:#335a819a;border:1px solid #66ffffff;display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
+  .mock .box{display:inline-block;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:9px 12px;color:#fff;font-size:16px;min-width:220px;text-align:left}
+  .mock .fieldbar{width:100%;height:40px;border-radius:6px;border:1px solid var(--border);margin-top:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px}
+  h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;margin-bottom:14px}
+  .kicker{color:var(--accent);font-size:14px;letter-spacing:1px;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:32px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px}
+  .card h3{font-size:18px;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:15px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:32px;counter-reset:st}
+  .step{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative}
+  .step::before{counter-increment:st;content:counter(st);position:absolute;top:16px;right:18px;font-size:40px;font-weight:800;color:rgba(79,163,255,.25)}
+  .step h3{font-size:17px;margin-bottom:8px}
+  .step p{color:var(--muted);font-size:15px}
+  .openbox{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px}
+  .openbox code{background:#0b1526;border:1px solid var(--border);border-radius:8px;padding:2px 6px;color:#7fd0ff;font-size:.9em}
+  .license{color:var(--muted);font-size:15px;margin-top:12px}
+  .price-box{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--accent);border-radius:18px;padding:40px;text-align:center;max-width:520px;margin:8px auto}
+  .price-box .big{font-size:52px;font-weight:800;color:var(--accent)}
+  .price-box .unit{color:var(--muted);font-size:18px}
+  .price-box p{color:var(--muted);margin:10px 0 24px}
+  .buy{font-size:18px;padding:16px 40px}
+  .note{max-width:640px;margin:20px auto 0;color:var(--muted);font-size:14px}
+  .faq{max-width:760px;margin:24px auto 0}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:600;font-size:16px}
+  details p{color:var(--muted);margin-top:10px;font-size:15px}
+  footer{padding:40px 0 56px;border-top:1px solid var(--border);color:var(--muted);font-size:14px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  @media(max-width:640px){
+    nav .links{display:none}
+    section{padding:52px 0}
+    .hero{padding-top:64px}
+    .price-box{padding:28px}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <nav class="wrap">
+    <div class="brand"><span class="dot"></span>SEIW</div>
+    <div class="links">
+      <a href="#why">Зачем это</a>
+      <a href="#features">Возможности</a>
+      <a href="#setup">Установка</a>
+      <a href="#opensource">Открытый код</a>
+      <a href="#buy">Купить</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="kicker">Защищённый вход в Windows · SEIW</div>
+  <h1>Экран входа, на котором <span>подсмотреть пароль невозможно</span> — по рукам, взгляду или камере</h1>
+  <p class="lead">SEIW ставит между человеком и рабочим столом привычный экран Windows — но со «спящими» символами. Поле принимает любые нажатия, а к доступу ведёт только верная комбинация. Подглядывать бесполезно: посторонний видит всё введённое и всё равно не повторит вход.</p>
+  <a class="btn" href="#buy">Купить за 100 ₽ — навсегда</a>
+  <div class="price">Одна покупка · без подписок · лицензия навсегда</div>
+
+  <div class="mock">
+    <div class="scr">
+      <div class="lockline"><div class="big">14:05</div><div class="sub">воскресенье, 18 октября</div></div>
+      <div class="center">
+        <div class="av">А</div>
+        <div class="box">••••••</div>
+      </div>
+      <div style="position:absolute;right:6%;bottom:8%;color:rgba(255,255,255,.8);font-size:13px">ENG</div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="kicker">Возможности</div>
+    <h2>Защищённый вход, которому не страшно подглядывание</h2>
+    <div class="features">
+      <div class="card"><h3>Экран входа в стиле Windows</h3><p>Блокировка выглядит как родной экран Windows: часы, дата, аватар и поле пароля. Посторонний видит просто привычный «замок».</p></div>
+      <div class="card"><h3>Пароль владельца</h3><p>Рабочий стол открывается только по вашему паролю. Никаких обходных путей и скрытых кнопок — выход только с верным паролем.</p></div>
+      <div class="card"><h3>Аккуратный ввод</h3><p>Символы показываются на секунду и превращаются в точки. Кнопка-глаз показывает введённый пароль по желанию.</p></div>
+      <div class="card"><h3>«Спящие» символы — защита от подглядывания</h3><p>Поле пропускает любые нажатия — буквы, цифры, случайные знаки. Видно всё, но к доступу ведут не все символы. Подсмотреть пароль по движению рук, взгляду или камере — бесполезно. О подглядывании почти никто не думает — а зря.</p></div>
+      <div class="card"><h3>Английский ввод без раскладки</h3><p>Пароль набирается латиницей и цифрами — в наборе пароля участвуют только английские символы. Русские буквы в пароль не входят, поэтому нет путаницы с раскладкой.</p></div>
+      <div class="card"><h3>Восстановление пароля</h3><p>Забыли пароль? Встроенный мастер «Восстановление пароля» с ключом восстановления (латиница и цифры) вернёт доступ.</p></div>
+      <div class="card"><h3>Автозагрузка</h3><p>Защищённый экран поднимается сразу при включении компьютера — вход готов к работе.</p></div>
+      <div class="card"><h3>Родительский контроль — одно из применений</h3><p>Можно задать интервалы по дням недели: в учебные часы компьютер не реагирует даже на пароль. Это лишь один из сценариев — программа универсальна.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <div class="kicker">Установка за 3 шага</div>
+    <h2>Запускается за минуту</h2>
+    <div class="steps">
+      <div class="step"><h3>Скопируйте файл</h3><p>Положите SEIW.exe в свою папку, например <code>C:\SEIW</code>.</p></div>
+      <div class="step"><h3>Запустите один раз</h3><p>При первом запуске программа создаст учётную запись «Администратор».</p></div>
+      <div class="step"><h3>Смените пароль</h3><p>Введите свой пароль — и добавьте программу в автозагрузку.</p></div>
+    </div>
+    <p style="color:var(--muted);margin-top:16px">Нужен .NET Desktop Runtime 8.0 — проверяется одной командой <code>dotnet --list-runtimes</code>.</p>
+  </div>
+</section>
+
+<section id="opensource">
+  <div class="wrap">
+    <div class="kicker">Открытый исходный код</div>
+    <h2>Никаких скрытых действий</h2>
+    <div class="openbox">
+      <p>Весь исходный код SEIW распространяется под свободной лицензией <strong><code>MIT</code></strong>. Вы можете посмотреть, как работает каждая функция, перед установкой.</p>
+      <p class="license">Лицензия MIT: использование, копирование и изменение разрешены свободно, программа поставляется «как есть» без гарантий.</p>
+    </div>
+  </div>
+</section>
+
+<section id="buy">
+  <div class="wrap">
+    <div class="price-box">
+      <div class="kicker">Лицензия навсегда</div>
+      <div class="big">100 ₽</div>
+      <div class="unit">один раз · без подписок</div>
+      <p>SEIW — полная версия без ограничений. Обновления — бесплатно.</p>
+      <a class="btn buy" id="buyBtn" href="download/SEIW-Guard-1.0.zip">Скачать программу (ZIP)</a>
+      <div class="note" id="paynote">Внутри архива — SEIWGuard.exe, LockAgent.exe, инструкция и лицензия. После активации запросите ключ у продавца.</div>
+    </div>
+  </div>
+</section>
+
+<section class="faq">
+  <div class="wrap">
+    <h2>Частые вопросы</h2>
+    <div class="faq">
+      <details open><summary>Это безопасно? Не вирус?</summary><p>Код открыт под лицензией MIT — любую функцию можно проверить. Программа не собирает данные и работает полностью локально, без интернета.</p></details>
+      <details><summary>Можно ли задать расписание доступа?</summary><p>Да. В разделе «Расписание доступа» задаются интервалы по дням недели: в выбранные часы компьютер не реагирует даже на верный пароль (Lock), либо просто показывает напоминание (Message), либо по таймеру выключается (Shutdown). Несколько интервалов — поддерживается.</p></details>
+      <details><summary>Что если кто-то нажмёт Alt+F4 или переключит окно?</summary><p>Окно блокировки возвращается на передний план, а закрытие (Alt+F4) заблокировано до ввода правильного пароля.</p></details>
+      <details><summary>Разве пароль нельзя подсмотреть — по рукам, клавишам или камере?</summary><p>Практически нет. Это суть «спящих» символов: поле принимает любые нажатия — латинские буквы, цифры, случайные знаки. Все они видимые, но к доступу ведёт только верная комбинация. Тот, кто наблюдает за руками, взглядом или записью клавиатуры, видит всё — и всё равно не сможет повторить вход. Подбирать пароль вслепую — «цедить воду решетом». Русские буквы в пароле не участвуют: ввод идёт латиницей и цифрами, без путаницы с раскладкой. Большинство экранов входа думают о том, чтобы пароль не подглядели набрать — но почти никто не защищается от слежки потом: камерой, людьми вокруг и записью клавиатуры. SEIW закрывает именно эту дыру.</p></details>
+      <details><summary>Забыл пароль — что делать?</summary><p>Нажмите «Забыли пароль» на экране и введите ключ восстановления (латиница и цифры) — зададите новый пароль без потери данных.</p></details>
+      <details><summary>Нужен ли интернет при работе программы?</summary><p>Нет. Всё работает локально на вашем компьютере.</p></details>
+      <details><summary>Как это проверить перед покупкой?</summary><p>Скачайте программу из поставки и запустите на своей машине — она полностью рабочая. Лицензия нужна для легального использования.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>SEIW · защищённый вход в Windows</div>
+    <div>Открытый код (MIT) · Продаётся с 2026 г.</div>
+  </div>
+</footer>
+</body>
+</html>
