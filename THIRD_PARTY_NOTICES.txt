@@ -1,0 +1,72 @@
+THIRD PARTY NOTICES
+===================
+
+Настоящий файл содержит перечень сторонних компонентов, используемых в
+программном обеспечении SEIW, и условия их использования. Файл является
+частью дистрибутива Программы.
+
+Программа SEIW, её исходный код и исполняемые компоненты, созданные
+Правообладателем (COMMUNICATION LINKS LTD), не включены в настоящий перечень:
+они не являются сторонними компонентами.
+
+
+1. .NET Runtime / .NET Desktop Runtime
+   - Источник: https://dotnet.microsoft.com/
+   - Применяется при работе Программы (целевая платформа net8.0-windows).
+   - Лицензия .NET Library: MIT License.
+   - SDK и инструменты распространяются на условиях MIT License и иных
+     лицензий, указанных в официальном дистрибутиве .NET.
+   - Условия: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+
+
+2. Microsoft.Extensions.Hosting
+   - Источник: https://github.com/dotnet/runtime
+   - Используется в компоненте SEIWGuard (Windows-служба).
+   - Лицензия: MIT License.
+   - Условия: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+
+
+3. Microsoft.Extensions.Hosting.WindowsServices
+   - Источник: https://github.com/dotnet/runtime
+   - Используется в компоненте SEIWGuard (Windows-служба).
+   - Лицензия: MIT License.
+   - Условия: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+
+
+4. Microsoft.Win32.SystemEvents
+   - Источник: https://github.com/dotnet/runtime
+   - Используется в компоненте SEIWGuard для обработки системных событий
+     Windows.
+   - Лицензия: MIT License.
+   - Условия: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+
+
+5. Собственные графические ресурсы и шрифты
+   - Обои по умолчанию и аватары поставляются вместе с Программой либо
+     задаются пользователем. Шрифты «Segoe UI» и системные шрифты Windows
+     используются средствами операционной системы и не распространяются
+     вместе с Программой.
+
+
+ТЕКСТ ЛИЦЕНЗИИ MIT
+------------------
+
+Copyright (c) .NET Foundation and Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
