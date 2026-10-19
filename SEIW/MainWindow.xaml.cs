@@ -44,6 +44,7 @@ public partial class MainWindow : Window
     private bool _showPassword;
     private bool _rendering;         // защита от реентерабельности TextChanged
     private readonly List<string> _typed = new(); // реальные введённые символы
+    private int _failedAttempts;                    // подряд неверных попыток ввода пароля
 
     public MainWindow()
     {
@@ -130,7 +131,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrEmpty(code)) { SetupStatus.Text = "Set a recovery code."; return; }
 
         _current.SetPassword(p1);
-        _current.RecoveryCode = code;
+        _current.SetRecoveryCode(code);
         _current.ForceChange = false;
         UserStore.Save(_users);
 
@@ -380,7 +381,7 @@ public partial class MainWindow : Window
         string np = RecoveryNewPass.Text;
         string cp = RecoveryConfirmPass.Text;
 
-        if (string.IsNullOrEmpty(_current.RecoveryCode) || !string.Equals(code, _current.RecoveryCode, StringComparison.Ordinal))
+        if (!_current.HasRecoveryCode || !_current.CheckRecoveryCode(code))
         {
             RecoveryStatus.Text = "Invalid recovery code.";
             return;
@@ -669,15 +670,15 @@ public partial class MainWindow : Window
 
         string typed = string.Join("", _typed);
 
-        // Убираем «спящие» знаки: остаются только те, что участвуют в пароле.
-        var liveChars = new HashSet<string>(_current.LiveChars, StringComparer.Ordinal);
-        string liveOnly = new string(typed.Where(c => liveChars.Contains(c.ToString())).ToArray());
-
+        // Строгий допуск: доступ ведёт только точное совпадение всего введённого
+        // пароля. «Спящие» знаки остаются дезориентацией поля (вводятся и
+        // отображаются), но не ослабляют проверку и не открывают доступ
+        // подпоследовательностью «живых» знаков.
         var realOk = _current.CheckPassword(typed);
-        var liveOk = _current.CheckPassword(liveOnly);
 
-        if (realOk || liveOk)
+        if (realOk)
         {
+            _failedAttempts = 0;
             // В интервале Lock компьютер не разблокируется даже с верным паролем
             // (например, учебные часы или лимит времени работы).
             var active = ActiveInterval(DateTime.Now);
@@ -706,10 +707,34 @@ public partial class MainWindow : Window
         }
         else
         {
-            StatusText.Text = "Wrong password. Try again.";
-            _typed.Clear();
-            PasswordBox.Text = "";
-            FocusPassword();
+            _failedAttempts++;
+            if (_failedAttempts >= 5)
+            {
+                // Слишком много неверных попыток: блокируем поле на 30 секунд.
+                StatusText.Text = "Too many failed attempts. Try again in 30 seconds.";
+                _typed.Clear();
+                PasswordBox.Text = "";
+                PasswordBox.IsEnabled = false;
+                EnterBtn.IsEnabled = false;
+                var unlock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+                unlock.Tick += (_, _) =>
+                {
+                    unlock.Stop();
+                    _failedAttempts = 0;
+                    PasswordBox.IsEnabled = true;
+                    EnterBtn.IsEnabled = true;
+                    StatusText.Text = "";
+                    FocusPassword();
+                };
+                unlock.Start();
+            }
+            else
+            {
+                StatusText.Text = "Wrong password. Try again.";
+                _typed.Clear();
+                PasswordBox.Text = "";
+                FocusPassword();
+            }
         }
     }
 
