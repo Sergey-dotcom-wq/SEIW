@@ -79,3 +79,6 @@ dotnet build SEIWGuard\SEIWGuard.csproj -c Release
 лицензий.
 
 Программа не собирает данные и работает полностью локально, без интернета.
+
+Описание альтернативного способа ввода (круговой циферблат вместо текстового
+поля) — см. [CIRCULAR-PASSWORD.md](CIRCULAR-PASSWORD.md).
