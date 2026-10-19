@@ -62,6 +62,23 @@
 
                 <TextBlock x:Name="StatusText" HorizontalAlignment="Center" Margin="0,12,0,0"
                        FontSize="14" Foreground="#FFF0F0"/>
+
+                <!-- ===== Круговой ввод пароля (КВП): циферблат ===== -->
+                <StackPanel x:Name="CircularPanel" Orientation="Vertical" Visibility="Collapsed"
+                            HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <TextBlock Text="Circlar dial: tap the sectors in your password sequence"
+                               HorizontalAlignment="Center" FontSize="13" Foreground="#BFCBDC"/>
+                    <Canvas x:Name="DialCanvas" Width="300" Height="300" Margin="0,8,0,0"
+                            HorizontalAlignment="Center" Background="Transparent"
+                            MouseLeftButtonDown="DialCanvas_MouseLeftButtonDown"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <TextBlock x:Name="DialProgress" FontSize="15" Foreground="#FFFFFF" VerticalAlignment="Center"
+                                   Text="Sequence: "/>
+                        <Button Content="Clear" Click="DialClear_Click" Width="60" Height="28"
+                                Margin="10,0,0,0" FontSize="12" Background="#2A3B55" Foreground="White"
+                                BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
         </StackPanel>
 
         <!-- ===== Активация (запрос ключа при первом запуске) ===== -->

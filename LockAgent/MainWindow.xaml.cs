@@ -2,7 +2,9 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using SEIWCore;
 
@@ -30,6 +32,11 @@ public partial class MainWindow : Window
     private readonly List<string> _typed = new();
     private bool _showPassword;
 
+    // КВП (круговой ввод): текущий набор секторов
+    private readonly List<int> _dial = new();
+    private int _dialSectors = 12;
+    private readonly List<System.Windows.Shapes.Path> _dialShapes = new();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -54,6 +61,8 @@ public partial class MainWindow : Window
         }
         AvatarLetter.Text = _current.Name.Length > 0 ? _current.Name.Substring(0, 1).ToUpper() : "U";
         UserNameLabel.Text = _current.Name;
+
+        InitCircularIfNeeded();
 
         _maskTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
         _maskTimer.Tick += (_, _) => { _maskTimer.Stop(); RenderPassword(false); };
@@ -234,8 +243,144 @@ public partial class MainWindow : Window
 AvatarLetter.Text = _current.Name.Length > 0 ? _current.Name.Substring(0, 1).ToUpper() : "U";
             UserNameLabel.Text = _current.Name;
         }
+        InitCircularIfNeeded();
         LoginPanel.Visibility = Visibility.Visible;
         FocusPassword();
+    }
+
+    // ===== КВП: круговой циферблат =====
+    private void InitCircularIfNeeded()
+    {
+        if (_current != null && _current.UseCircular)
+        {
+            _dialSectors = _current.CircularSectors >= 4 ? _current.CircularSectors : 12;
+            DialCanvas.Visibility = Visibility.Visible;
+            BuildDial();
+            UpdateDialText();
+        }
+        else
+        {
+            DialCanvas.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void BuildDial()
+    {
+        DialCanvas.Children.Clear();
+        _dialShapes.Clear();
+        double cx = DialCanvas.Width / 2.0, cy = DialCanvas.Height / 2.0, R = Math.Min(DialCanvas.Width, DialCanvas.Height) / 2.0 - 6;
+
+        for (int i = 0; i < _dialSectors; i++)
+        {
+            double start = i * 2 * Math.PI / _dialSectors - Math.PI / 2;
+            double sweep = 2 * Math.PI / _dialSectors;
+
+            var seg = new System.Windows.Media.PathSegmentCollection();
+            var fig = new System.Windows.Media.PathFigure
+            {
+                StartPoint = new Point(cx, cy),
+                IsClosed = true,
+                IsFilled = true
+            };
+            fig.Segments.Add(new System.Windows.Media.LineSegment(new Point(cx + R * Math.Cos(start), cy + R * Math.Sin(start)), true));
+            bool large = sweep > Math.PI;
+            fig.Segments.Add(new System.Windows.Media.ArcSegment
+            {
+                Point = new Point(cx + R * Math.Cos(start + sweep), cy + R * Math.Sin(start + sweep)),
+                Size = new Size(R, R),
+                IsLargeArc = large,
+                SweepDirection = System.Windows.Media.SweepDirection.Clockwise
+            });
+            var p = new System.Windows.Shapes.Path
+            {
+                Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0x5A, 0x81, 0x9A)),
+                Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x8A, 0xFF, 0xFF, 0xFF)),
+                StrokeThickness = 1,
+                Data = new System.Windows.Media.PathGeometry(new[] { fig }),
+                Tag = i
+            };
+            p.MouseLeftButtonDown += DialSegment_Click;
+            var segColl = new System.Windows.Media.PathGeometry();
+            _dialShapes.Add(p);
+            DialCanvas.Children.Add(p);
+
+            // Подпись сектора (0..N-1)
+            double mid = start + sweep / 2;
+            var lbl = new TextBlock
+            {
+                Text = i.ToString(),
+                FontSize = 13,
+                Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCF, 0xE0, 0xF5)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Canvas.SetLeft(lbl, cx + (R * 0.7) * Math.Cos(mid) - 7);
+            Canvas.SetTop(lbl, cy + (R * 0.7) * Math.Sin(mid) - 9);
+            DialCanvas.Children.Add(lbl);
+        }
+    }
+
+    private Point LastDialPoint;
+    private void DialSegment_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Path p && p.Tag is int idx)
+        {
+            _dial.Add(idx);
+            LastDialPoint = e.GetPosition(DialCanvas);
+            UpdateDialText();
+        }
+    }
+
+    private void DialCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var pos = e.GetPosition(DialCanvas);
+        double cx = DialCanvas.Width / 2.0, cy = DialCanvas.Height / 2.0;
+        double dx = pos.X - cx, dy = pos.Y - cy;
+        double dist = Math.Sqrt(dx * dx + dy * dy);
+        double R = Math.Min(DialCanvas.Width, DialCanvas.Height) / 2.0 - 6;
+        if (dist > R) return; // клик вне круга
+
+        double ang = Math.Atan2(dy, dx) + Math.PI / 2;
+        if (ang < 0) ang += 2 * Math.PI;
+        int idx = (int)(ang / (2 * Math.PI / _dialSectors)) % _dialSectors;
+        _dial.Add(idx);
+        UpdateDialText();
+    }
+
+    private void UpdateDialText()
+    {
+        DialProgress.Text = "Sequence: " + string.Join("·", _dial);
+        if (_dial.Count >= 4)
+        {
+            // Введено достаточно — проверяем вход
+            CheckDialLogin();
+        }
+    }
+
+    private void DialClear_Click(object sender, RoutedEventArgs e)
+    {
+        _dial.Clear();
+        UpdateDialText();
+        StatusText.Text = "";
+    }
+
+    private void CheckDialLogin()
+    {
+        if (_current is null) return;
+        if (_current.CheckCircularPassword(_dialSectors, _dial))
+        {
+            StatusText.Text = "Access granted";
+            EnterBtn.IsEnabled = false;
+            var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            t.Tick += (_, _) => { t.Stop(); _allowClose = true; Close(); };
+            t.Start();
+        }
+        else
+        {
+            StatusText.Text = "Wrong sequence. Try again.";
+            _dial.Clear();
+            UpdateDialText();
+        }
     }
 
     // Кнопка «Удалить»: стирает последний введённый символ пароля.

@@ -14,6 +14,12 @@ public class SeiwUser
     public List<string> LiveChars { get; set; } = new();
     public bool ForceChange { get; set; } = false;
     public string RecoveryCode { get; set; } = "";
+
+    // Круговой ввод пароля (КВП): режим кода/последовательности секторов на циферблате.
+    public bool UseCircular { get; set; } = false;           // включён ли круговой ввод
+    public int CircularSectors { get; set; } = 12;           // число секторов на циферблате
+    public string CircularHash { get; set; } = "";           // хэш последовательности индексов
+
     public DateTime Created { get; set; } = DateTime.Now;
 
     public static List<string> ComputeLiveChars(string password)
@@ -24,6 +30,22 @@ public class SeiwUser
         Salt = RandomSalt();
         Hash = HashPassword(password, Salt);
         LiveChars = ComputeLiveChars(password);
+    }
+
+    public void SetCircularPassword(int sectors, IEnumerable<int> sequence)
+    {
+        CircularSectors = sectors;
+        UseCircular = true;
+        var indices = string.Join(",", sequence.Select(x => x.ToString()));
+        CircularHash = HashPassword(indices, Salt);
+    }
+
+    public bool CheckCircularPassword(int sectors, IEnumerable<int> sequence)
+    {
+        if (!UseCircular || string.IsNullOrEmpty(CircularHash)) return false;
+        if (sectors != CircularSectors) return false;
+        var indices = string.Join(",", sequence.Select(x => x.ToString()));
+        return HashPassword(indices, Salt) == CircularHash;
     }
 
     public bool CheckPassword(string password) => HashPassword(password, Salt) == Hash;

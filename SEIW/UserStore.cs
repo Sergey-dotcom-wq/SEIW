@@ -18,7 +18,29 @@ public class SeiwUser
     public List<string> LiveChars { get; set; } = new(); // знаки, участвующие в пароле («живые»)
     public bool ForceChange { get; set; } = false;  // принудительная смена при входе
     public string RecoveryCode { get; set; } = "";  // секретный код восстановления пароля
+
+    // Круговой ввод пароля (КВП): режим последовательности секторов на циферблате.
+    public bool UseCircular { get; set; } = false;
+    public int CircularSectors { get; set; } = 12;
+    public string CircularHash { get; set; } = "";
+
     public DateTime Created { get; set; } = DateTime.Now;
+
+    public void SetCircularPassword(int sectors, IEnumerable<int> sequence)
+    {
+        CircularSectors = sectors;
+        UseCircular = true;
+        var indices = string.Join(",", sequence.Select(x => x.ToString()));
+        CircularHash = HashPassword(indices, Salt);
+    }
+
+    public bool CheckCircularPassword(int sectors, IEnumerable<int> sequence)
+    {
+        if (!UseCircular || string.IsNullOrEmpty(CircularHash)) return false;
+        if (sectors != CircularSectors) return false;
+        var indices = string.Join(",", sequence.Select(x => x.ToString()));
+        return HashPassword(indices, Salt) == CircularHash;
+    }
 
     /// <summary>«Живые» знаки пароля = набор уникальных знаков.<br/>
     /// Знаки, не входящие в этот набор, «спят»: отображаются в поле, но к доступу не ведут.</summary>

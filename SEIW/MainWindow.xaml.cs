@@ -741,6 +741,11 @@ public partial class MainWindow : Window
         FocusPassword();
     }
 
+    private void UseCircularChk_Changed(object sender, RoutedEventArgs e)
+    {
+        CircularSetupPanel.Visibility = UseCircularChk.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void ChangePassConfirm_Click(object sender, RoutedEventArgs e)
     {
         if (_current is null) return;
@@ -754,20 +759,48 @@ public partial class MainWindow : Window
             ChangeStatus.Text = "Current password is incorrect.";
             return;
         }
-        if (np.Length < 4)
-        {
-            ChangeStatus.Text = "New password must be at least 4 characters.";
-            return;
-        }
-        if (np != cp)
-        {
-            ChangeStatus.Text = "New password and confirmation do not match.";
-            return;
-        }
 
-        _current.SetPassword(np);
-        UserStore.Save(_users);
-        ChangeStatus.Text = "Password changed.";
+        if (UseCircularChk.IsChecked == true)
+        {
+            // Круговой режим: задаём пароль-последовательность секторов (без текстового пароля).
+            if (!int.TryParse(CircularSectorsBox.Text, out int sectors) || sectors < 4)
+            {
+                ChangeStatus.Text = "Sectors must be an integer >= 4.";
+                return;
+            }
+            var seqParts = CircularSeqBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var seq = new List<int>();
+            bool ok = true;
+            foreach (var p in seqParts)
+            {
+                if (!int.TryParse(p, out int v) || v < 0 || v >= sectors) { ok = false; break; }
+                seq.Add(v);
+            }
+            if (!ok || seq.Count < 4)
+            {
+                ChangeStatus.Text = "Enter at least 4 sector indexes between 0 and " + (sectors - 1) + ".";
+                return;
+            }
+            _current.SetCircularPassword(sectors, seq);
+            UserStore.Save(_users);
+            ChangeStatus.Text = "Circular password set.";
+        }
+        else
+        {
+            if (np.Length < 4)
+            {
+                ChangeStatus.Text = "New password must be at least 4 characters.";
+                return;
+            }
+            if (np != cp)
+            {
+                ChangeStatus.Text = "New password and confirmation do not match.";
+                return;
+            }
+            _current.SetPassword(np);
+            UserStore.Save(_users);
+            ChangeStatus.Text = "Password changed.";
+        }
 
         // Возврат на экран входа.
         LoginRoot.Visibility = Visibility.Visible;
