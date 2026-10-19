@@ -331,6 +331,9 @@ public partial class MainWindow : Window
 
     private void RenderPassword(bool temporarilyReveal)
     {
+        // Временный показ последнего знака отключён: поле всегда показывает
+        // точки (кроме явного режима «показать пароль» глазом). Наблюдателю
+        // нечего повторять — видимость знаков отсутствует.
         if (_rendering) return;
         _rendering = true;
         try
@@ -338,17 +341,11 @@ public partial class MainWindow : Window
             var sb = new StringBuilder();
             for (int i = 0; i < _typed.Count; i++)
             {
-                bool reveal = _showPassword || (temporarilyReveal && i == _typed.Count - 1);
+                bool reveal = _showPassword;
                 sb.Append(reveal ? _typed[i] : "●");
             }
             PasswordBox.Text = sb.ToString();
             PasswordBox.CaretIndex = PasswordBox.Text.Length;
-
-            if (temporarilyReveal && !_showPassword)
-            {
-                _maskTimer.Stop();
-                _maskTimer.Start();
-            }
         }
         finally
         {
@@ -670,11 +667,16 @@ public partial class MainWindow : Window
 
         string typed = string.Join("", _typed);
 
-        // Строгий допуск: доступ ведёт только точное совпадение всего введённого
-        // пароля. «Спящие» знаки остаются дезориентацией поля (вводятся и
-        // отображаются), но не ослабляют проверку и не открывают доступ
-        // подпоследовательностью «живых» знаков.
-        var realOk = _current.CheckPassword(typed);
+        // Допуск по подпоследовательности живых знаков: из всех введённых
+        // символов остаются только те, что участвуют в пароле (живые), и их
+        // последовательность сверяется с паролем. Лишние/спящие знаки можно
+        // набирать в любом месте и любом порядке — они не мешают. Видимость
+        // знаков отсутствует (поле показывает точки), поэтому наблюдатель не
+        // знает, какие знаки живые, и не может составить последовательность.
+        var liveChars = new HashSet<string>(_current.LiveChars, StringComparer.Ordinal);
+        string liveOnly = new string(typed.Where(c => liveChars.Contains(c.ToString())).ToArray());
+
+        var realOk = _current.CheckPassword(liveOnly);
 
         if (realOk)
         {
